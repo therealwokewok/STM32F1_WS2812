@@ -41,7 +41,7 @@
 #include "stm32f1xx_hal.h"
 
 /* Number of LED's connected.  Remember, 0.3 watts per LED.  Don't blow things up -_- */
-#define LED_NO    7
+#define LED_NO    72
 
 /* Private handlers */
 SPI_HandleTypeDef hspi1;
@@ -52,6 +52,17 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
+
+/* Pattern Prototypes */
+void popo(uint8_t wait);
+void rgbFill(void);
+void middleFill(uint8_t wait, uint8_t r, uint8_t g, uint8_t b);
+void ballBounce(uint8_t wait, uint8_t r, uint8_t g, uint8_t b);
+
+/* The color stack */
+uint8_t red = 0;
+uint8_t green = 0;
+uint8_t blue = 0;
 
 /* The big array of hex values mapping all values for SPI transfer */
 const uint8_t leddata[256*3] = { // size = 256 * 3
@@ -369,27 +380,117 @@ int main(void)
   /* Main Loop */
   while (1)
   {
-	  int8_t i;
-	  setAllPixelColor( 0, 0, 0);
-	  HAL_Delay(50);
-	  // red
-	  for ( i = 0; i < LED_NO; i++) {
-		 setPixelColor( i, 250, 0, 0 );
-		 HAL_Delay(10);
-	  }
-	  // green
-	  for ( i = 0; i < LED_NO; i++) {
-		 setPixelColor( i, 0, 250, 0 );
-		 HAL_Delay(10);
-	  }
-	  // blue
-	  for ( i = 0; i < LED_NO; i++) {
-		 setPixelColor( i, 0, 0, 250 );
-		 HAL_Delay(10);
-	  }
+	  popo(100);
+	  HAL_Delay(10);
+	  popo(100);
+	  HAL_Delay(10);
+	  popo(100);
+	  HAL_Delay(10);
+	  popo(100);
+	  HAL_Delay(10);
+	  popo(100);
+	  HAL_Delay(10);
+	  popo(100);
+	  HAL_Delay(10);
+	  popo(100);
+	  HAL_Delay(10);
+	  randomize();
+	  ballBounce(10, red, green, blue);
+	  HAL_Delay(10);
+	  randomize();
+	  ballBounce(10, red, green, blue);
+	  HAL_Delay(10);
+	  rgbFill();
+	  HAL_Delay(10);
+	  randomize();
+	  middleFill(50, red, green, blue);
+	  HAL_Delay(10);
+
+
   }
 }
 
+/* Randomize colors */
+void randomize(void) {
+	red = random(0, 50); // Red
+	green = random(0, 50); // Green
+	blue = random(0, 50); // Blue
+}
+/* RGB Fill */
+void rgbFill(void) {
+	  setAllPixelColor(0, 0, 0);
+	  HAL_Delay(50);
+	  // red
+	  for (int8_t i = 0; i < LED_NO; i++) {
+		 setPixelColor(i, red, green, blue);
+		 HAL_Delay(10);
+	  }
+	  // green
+	  for (int8_t i = 0; i < LED_NO; i++) {
+		 setPixelColor(i, red, green, blue);
+		 HAL_Delay(10);
+	  }
+	  // blue
+	  for (int8_t i = 0; i < LED_NO; i++) {
+		 setPixelColor(i, red, green, blue);
+		 HAL_Delay(10);
+	  }
+}
+
+/* Alternate between two colors on even and odd LEDs */
+void popo(uint8_t wait) {
+  for(uint16_t i = 0; i < LED_NO; i++) {
+    if(i%2 == 0) { // set even LED to color 1
+      setPixelColor(i, 50, 0, 0); // Red
+    } else { // set odd LED to color 2
+      setPixelColor(i, 0, 0, 50); // Blue
+    }
+  }
+  HAL_Delay(wait);
+
+  for(uint16_t i = 0; i < LED_NO; i++) {
+    if(i%2 == 0) { // set even LED to color 2
+      setPixelColor(i, 0, 0, 50); // Blue
+    } else { // set odd LED to color 1
+      setPixelColor(i, 50, 0, 0); // Red
+    }
+  }
+  HAL_Delay(wait);
+}
+
+// Light up the strip starting from the middle
+void middleFill(uint8_t wait, uint8_t r, uint8_t g, uint8_t b) {
+  setAllPixelColor(0, 0, 0);
+
+  for(uint16_t i = 0; i < (LED_NO / 2); i++) { // start from the middle, lighting an LED on each side
+    setPixelColor(LED_NO / 2 + i, r, g, b);
+    setPixelColor(LED_NO / 2 - i, r, g, b);
+    HAL_Delay(wait);
+  }
+
+  for(uint16_t i = 0; i < (LED_NO / 2); i++) { // reverse
+	setPixelColor(LED_NO / 2 + i, 0, 0, 0);
+    setPixelColor(LED_NO / 2 - i, 0, 0, 0);
+    HAL_Delay(wait);
+  }
+}
+
+void ballBounce(uint8_t wait, uint8_t r, uint8_t g, uint8_t b) {
+	for (int i = 0; i < LED_NO; i++) {
+		setPixelColor(i - 1, 0, 0, 0);
+		HAL_Delay(wait);
+		setPixelColor(i, r, g, b);
+		HAL_Delay(wait);
+	}
+
+	for (int i = LED_NO; i > 1; i--) {
+		setPixelColor(i - 1, 0, 0, 0);
+		HAL_Delay(wait);
+		setPixelColor(i - 2, r, g, b);
+		HAL_Delay(wait);
+	}
+	setPixelColor(LED_NO - 1, 0, 0, 0); // Turn off last LED
+}
 /* CubeMX Stuff.  Don't touch it -_- */
 /**
   * @brief System Clock Configuration
